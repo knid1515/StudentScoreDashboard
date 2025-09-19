@@ -59,14 +59,19 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <header class="mb-8">
-            <div class="flex items-center space-x-4">
-                <div class="bg-blue-600 p-3 rounded-lg text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20V16"/></svg>
+            <div class="flex items-center w-full">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-blue-600 p-3 rounded-lg text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20V16"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">แดชบอร์ดสรุปคะแนนนักเรียน</h1>
+                        <p class="text-gray-500">ภาพรวมข้อมูลคะแนน, ตัวละคร และอันดับนักเรียน</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">แดชบอร์ดสรุปคะแนนนักเรียน</h1>
-                    <p class="text-gray-500">ภาพรวมข้อมูลคะแนน, ตัวละคร และอันดับนักเรียน</p>
-                </div>
+                 <button id="help-btn" class="ml-auto bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </button>
             </div>
         </header>
         
@@ -172,6 +177,40 @@
             <p>จัดทำโดย กฤตัชญ์ ทัศนศร</p>
         </footer>
 
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 md:p-8 w-11/12 md:w-1/2 lg:w-1/3 relative animate-fade-in-up">
+            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-800 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">คำแนะนำการใช้งาน</h2>
+            <div class="text-gray-600 space-y-4 mt-4">
+                <div>
+                    <h3 class="font-semibold text-gray-700">ภาพรวมข้อมูล (KPI Cards)</h3>
+                    <p>การ์ด 4 ใบด้านบนสุด คือข้อมูลสรุปที่สำคัญ ได้แก่ จำนวนนักเรียน, คะแนนเฉลี่ย, จำนวนตัวละคร และจำนวนห้องเรียนทั้งหมด</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">การกรองข้อมูล</h3>
+                    <p>คุณสามารถใช้แถบเมนูเพื่อกรองข้อมูลทั้งหมดในแดชบอร์ดให้แสดงเฉพาะห้องเรียนที่สนใจได้ หรือเลือก "ทุกห้อง" เพื่อดูภาพรวม</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">ตารางอันดับนักเรียน</h3>
+                    <p>แสดงรายชื่อนักเรียน 5 อันดับแรกที่มีคะแนนสูงสุด โดยจะแบ่งออกเป็น 2 ตาราง คือสำหรับนักเรียนชั้น ป.2 และ ป.3</p>
+                </div>
+                 <div>
+                    <h3 class="font-semibold text-gray-700">กราฟต่างๆ</h3>
+                    <ul class="list-disc list-inside space-y-1 pl-2">
+                        <li><b>คะแนนเฉลี่ยตามระดับชั้น:</b> เปรียบเทียบคะแนนเฉลี่ยของแต่ละห้องเรียน</li>
+                        <li><b>สัดส่วนตัวละคร:</b> แสดงความนิยมของตัวละครที่นักเรียนเลือกใช้</li>
+                        <li><b>การกระจายของคะแนน:</b> แสดงให้เห็นว่านักเรียนส่วนใหญ่มีคะแนนอยู่ในช่วงใด</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -363,10 +402,35 @@
 
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const dataFiles = ['P21.csv', 'P22.csv', 'P23.csv', 'P31.csv','P32.csv', 'P33.csv'];
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            helpBtn.addEventListener('click', () => {
+                helpModal.classList.remove('hidden');
+                helpModal.classList.add('flex');
+            });
+
+            const closeModal = () => {
+                helpModal.classList.add('hidden');
+                helpModal.classList.remove('flex');
+            }
+
+            closeModalBtn.addEventListener('click', closeModal);
+            helpModal.addEventListener('click', (event) => {
+                if (event.target === helpModal) {
+                    closeModal();
+                }
+            });
+
+
+            const dataFiles = ['P21.csv', 'P22.csv', 'P23.csv', 'P31.csv', 'P32.csv', 'P33.csv'];
 
             try {
-                const allDataPromises = dataFiles.map(file => d3.csv(file));
+                const allDataPromises = dataFiles.map(file => d3.csv(file).catch(err => {
+                    console.warn(`Could not load ${file}. It might be missing.`, err);
+                    return []; // Return empty array if a file is not found
+                }));
                 const allDataArrays = await Promise.all(allDataPromises);
 
                 const data = [].concat(...allDataArrays);
@@ -377,7 +441,9 @@
                         ...d,
                         'ชื่อ': d['ชื่อ - สกุล']?.trim(),
                         'คะแนน': isNaN(score) ? 0 : score,
-                        'ระดับชั้น': d['ระดับชั้น']?.trim()
+                        'ระดับชั้น': d['ระดับชั้น']?.trim(),
+                        'ตัวละคร': d['ตัวละคร']?.trim(),
+                        'ภาพตัวละคร': d['ภาพตัวละคร']?.trim()
                     };
                 }).filter(d => d['ชื่อ'] && d['ระดับชั้น']);
 
