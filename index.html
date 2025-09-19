@@ -123,11 +123,21 @@
 
         <!-- Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-             <!-- Leaderboard -->
-            <div class="chart-container lg:col-span-1">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับนักเรียน (Top 5)</h2>
-                <div id="leaderboard" class="space-y-4">
-                    <!-- Leaderboard items will be injected here -->
+             <!-- Leaderboard Column -->
+            <div class="lg:col-span-1 flex flex-col gap-6">
+                <!-- P.2 Leaderboard -->
+                <div class="chart-container">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.2 (Top 5)</h2>
+                    <div id="leaderboard-p2" class="space-y-4">
+                        <!-- P.2 Leaderboard items will be injected here -->
+                    </div>
+                </div>
+                <!-- P.3 Leaderboard -->
+                <div class="chart-container">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.3 (Top 5)</h2>
+                    <div id="leaderboard-p3" class="space-y-4">
+                        <!-- P.3 Leaderboard items will be injected here -->
+                    </div>
                 </div>
             </div>
 
@@ -193,8 +203,8 @@
             document.getElementById('total-classes').textContent = totalClasses;
         }
         
-        function updateLeaderboard(data) {
-            const leaderboardContainer = document.getElementById('leaderboard');
+        function renderLeaderboard(containerId, data) {
+            const leaderboardContainer = document.getElementById(containerId);
             leaderboardContainer.innerHTML = ''; // Clear existing leaderboard
             const sortedStudents = [...data].sort((a, b) => b['คะแนน'] - a['คะแนน']);
             const top5 = sortedStudents.slice(0, 5);
@@ -221,6 +231,14 @@
                 `;
                 leaderboardContainer.appendChild(studentDiv);
             });
+        }
+
+        function updateAllLeaderboards(data) {
+            const dataP2 = data.filter(d => d['ระดับชั้น'].startsWith('ป.2'));
+            const dataP3 = data.filter(d => d['ระดับชั้น'].startsWith('ป.3'));
+
+            renderLeaderboard('leaderboard-p2', dataP2);
+            renderLeaderboard('leaderboard-p3', dataP3);
         }
 
         function createClassAverageScoreChart(data) {
@@ -327,7 +345,7 @@
                 : allProcessedData.filter(d => d['ระดับชั้น'] === selectedClass);
 
             updateKpiCards(filteredData);
-            updateLeaderboard(filteredData);
+            updateAllLeaderboards(filteredData);
             updateCharacterDistributionChart(filteredData);
             updateScoreDistributionChart(filteredData);
 
@@ -345,7 +363,7 @@
 
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const dataFiles = ['P21.csv','P22.csv','P23.csv','P31.csv', 'P32.csv', 'P33.csv'];
+            const dataFiles = ['P21.csv', 'P22.csv', 'P23.csv', 'P31.csv', 'P33.csv'];
 
             try {
                 const allDataPromises = dataFiles.map(file => d3.csv(file));
