@@ -125,9 +125,11 @@
             </div>
 
             <!-- Class Average Score -->
-            <div class="chart-container lg:col-span-2">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">คะแนนเฉลี่ยตามระดับชั้น</h2>
-                <canvas id="classAverageScoreChart"></canvas>
+            <div class="chart-container lg:col-span-2 flex flex-col">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex-shrink-0">คะแนนเฉลี่ยตามระดับชั้น</h2>
+                <div class="relative flex-grow">
+                    <canvas id="classAverageScoreChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -148,8 +150,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const dataFile = 'P23.csv';
-            const charactersFile = 'P23.csv';
+            const dataFile = 'P23 WSN 25680702 ระบบบันทึกคะแนน ตัวละคร  - Data.csv';
+            const charactersFile = 'P23 WSN 25680702 ระบบบันทึกคะแนน ตัวละคร  - ตัวละคร.csv';
 
             try {
                 // Load data
@@ -354,3 +356,4 @@
     </script>
 </body>
 </html>
+
