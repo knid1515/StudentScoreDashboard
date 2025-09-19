@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>แดชบอร์ดสรุปคะแนนนักเรียน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -150,14 +150,14 @@
 
                 <!-- P.2 Leaderboard -->
                 <div class="chart-container">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.2 (Top 5)</h2>
+                    <h2 id="leaderboard-p2-title" class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.2 (Top 5)</h2>
                     <div id="leaderboard-p2" class="space-y-4">
                         <!-- P.2 Leaderboard items will be injected here -->
                     </div>
                 </div>
                 <!-- P.3 Leaderboard -->
                 <div class="chart-container">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.3 (Top 5)</h2>
+                    <h2 id="leaderboard-p3-title" class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.3 (Top 5)</h2>
                     <div id="leaderboard-p3" class="space-y-4">
                         <!-- P.3 Leaderboard items will be injected here -->
                     </div>
@@ -166,7 +166,7 @@
 
             <!-- Class Average Score -->
             <div class="chart-container lg:col-span-2 flex flex-col">
-                <h2 class="text-xl font-bold text-gray-800 mb-4 flex-shrink-0">คะแนนเฉลี่ยตามระดับชั้น</h2>
+                <h2 id="class-avg-score-title" class="text-xl font-bold text-gray-800 mb-4 flex-shrink-0">คะแนนเฉลี่ยตามระดับชั้น</h2>
                 <div class="relative flex-grow">
                     <canvas id="classAverageScoreChart"></canvas>
                 </div>
@@ -225,7 +225,7 @@
                  <div>
                     <h3 class="font-semibold text-gray-700">กราฟต่างๆ</h3>
                     <ul class="list-disc list-inside space-y-1 pl-2">
-                        <li><b>คะแนนเฉลี่ยตามระดับชั้น:</b> เปรียบเทียบคะแนนเฉลี่ยของแต่ละห้องเรียน</li>
+                        <li><b>คะแนนเฉลี่ย:</b> เมื่อเลือก "ทุกห้อง" จะแสดงการเปรียบเทียบระหว่างชั้นเรียน แต่เมื่อเลือกห้องเรียนใดห้องเรียนหนึ่ง จะไฮไลท์ห้องเรียนนั้นเพื่อเปรียบเทียบกับห้องอื่นๆ</li>
                         <li><b>สัดส่วนตัวละคร:</b> แสดงความนิยมของตัวละครที่นักเรียนเลือกใช้</li>
                         <li><b>การกระจายของคะแนน:</b> แสดงให้เห็นว่านักเรียนส่วนใหญ่มีคะแนนอยู่ในช่วงใด</li>
                     </ul>
@@ -294,10 +294,10 @@
         }
 
         function updateAllLeaderboards(data, selectedClass) {
-            const leaderboardP2Container = document.querySelector('#leaderboard-p2').parentElement;
-            const leaderboardP3Container = document.querySelector('#leaderboard-p3').parentElement;
-            const titleP2 = leaderboardP2Container.querySelector('h2');
-            const titleP3 = leaderboardP3Container.querySelector('h2');
+            const leaderboardP2Container = document.getElementById('leaderboard-p2-title').parentElement;
+            const leaderboardP3Container = document.getElementById('leaderboard-p3-title').parentElement;
+            const titleP2 = document.getElementById('leaderboard-p2-title');
+            const titleP3 = document.getElementById('leaderboard-p3-title');
 
             if (selectedClass === 'All') {
                 // When 'All' is selected, show aggregated leaderboards for P.2 and P.3
@@ -326,9 +326,18 @@
             }
         }
 
-        function createClassAverageScoreChart(data) {
+        function updateClassAverageScoreChart(selectedClass) {
+            const titleElement = document.getElementById('class-avg-score-title');
+            if (selectedClass === 'All') {
+                titleElement.textContent = 'คะแนนเฉลี่ยตามระดับชั้น';
+            } else {
+                titleElement.textContent = 'คะแนนเฉลี่ยตามระดับห้องเรียน';
+            }
+            
             destroyChart('classAverageScoreChart');
-            const scoresByClass = d3.group(data, d => d['ระดับชั้น']);
+
+            // Always use all data for this chart to compare
+            const scoresByClass = d3.group(allProcessedData, d => d['ระดับชั้น']);
             const classAverageScores = Array.from(scoresByClass, ([key, values]) => {
                 const total = d3.sum(values, d => d['คะแนน']);
                 return {
@@ -337,6 +346,18 @@
                 };
             }).sort((a,b) => b.average - a.average);
 
+            const defaultColor = 'rgba(59, 130, 246, 0.7)';
+            const highlightColor = 'rgba(245, 158, 11, 0.8)';
+            const defaultBorderColor = 'rgba(59, 130, 246, 1)';
+            const highlightBorderColor = 'rgba(245, 158, 11, 1)';
+
+            const backgroundColors = classAverageScores.map(d => {
+                return d.class === selectedClass ? highlightColor : defaultColor;
+            });
+             const borderColors = classAverageScores.map(d => {
+                return d.class === selectedClass ? highlightBorderColor : defaultBorderColor;
+            });
+
             const chart = new Chart(document.getElementById('classAverageScoreChart'), {
                 type: 'bar',
                 data: {
@@ -344,8 +365,8 @@
                     datasets: [{
                         label: 'คะแนนเฉลี่ย',
                         data: classAverageScores.map(d => d.average),
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
                         borderWidth: 1,
                         borderRadius: 5,
                     }]
@@ -439,6 +460,7 @@
 
             updateKpiCards(filteredData);
             updateAllLeaderboards(filteredData, selectedClass);
+            updateClassAverageScoreChart(selectedClass);
             updateCharacterDistributionChart(filteredData);
             updateScoreDistributionChart(filteredData);
 
@@ -528,7 +550,6 @@
                 });
 
                 // Initial render
-                createClassAverageScoreChart(allProcessedData);
                 updateDashboard('All');
 
 
