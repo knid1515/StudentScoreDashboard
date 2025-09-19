@@ -41,6 +41,11 @@
         .kpi-card.avg-score { border-color: #f59e0b; }
         .kpi-card.characters { border-color: #10b981; }
         .kpi-card.classes { border-color: #8b5cf6; }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
     </style>
 </head>
 
@@ -130,6 +135,19 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
              <!-- Leaderboard Column -->
             <div class="lg:col-span-1 flex flex-col gap-6">
+                 <!-- All Classes Leaderboard (Collapsible) -->
+                <div class="chart-container">
+                    <button id="leaderboard-all-toggle" class="w-full flex justify-between items-center text-left">
+                        <h2 class="text-xl font-bold text-gray-800">ตารางอันดับรวม (Top 5)</h2>
+                        <svg id="leaderboard-all-chevron" class="w-6 h-6 text-gray-600 transition-transform transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div id="leaderboard-all-content" class="collapsible-content mt-4">
+                        <div id="leaderboard-all" class="space-y-4">
+                            <!-- All Classes Leaderboard items will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- P.2 Leaderboard -->
                 <div class="chart-container">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">ตารางอันดับ ป.2 (Top 5)</h2>
@@ -199,7 +217,10 @@
                 </div>
                 <div>
                     <h3 class="font-semibold text-gray-700">ตารางอันดับนักเรียน</h3>
-                    <p>แสดงรายชื่อนักเรียน 5 อันดับแรกที่มีคะแนนสูงสุด โดยจะแบ่งออกเป็น 2 ตาราง คือสำหรับนักเรียนชั้น ป.2 และ ป.3</p>
+                     <ul class="list-disc list-inside space-y-1 pl-2">
+                        <li><b>ตารางอันดับรวม:</b> แสดงอันดับนักเรียน Top 5 จากทุกห้องรวมกัน (คลิกเพื่อเปิด/ปิด)</li>
+                        <li><b>ตารางอันดับ ป.2 และ ป.3:</b> แสดงอันดับนักเรียน Top 5 โดยแยกตามระดับชั้น</li>
+                    </ul>
                 </div>
                  <div>
                     <h3 class="font-semibold text-gray-700">กราฟต่างๆ</h3>
@@ -382,6 +403,14 @@
             const filteredData = (selectedClass === 'All')
                 ? allProcessedData
                 : allProcessedData.filter(d => d['ระดับชั้น'] === selectedClass);
+            
+            // Collapse the overall leaderboard if a specific class is selected
+            if(selectedClass !== 'All') {
+                const content = document.getElementById('leaderboard-all-content');
+                const chevron = document.getElementById('leaderboard-all-chevron');
+                content.style.maxHeight = '0px';
+                chevron.classList.remove('rotate-180');
+            }
 
             updateKpiCards(filteredData);
             updateAllLeaderboards(filteredData);
@@ -402,20 +431,18 @@
 
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Modal Logic
             const helpBtn = document.getElementById('help-btn');
             const helpModal = document.getElementById('help-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
-
             helpBtn.addEventListener('click', () => {
                 helpModal.classList.remove('hidden');
                 helpModal.classList.add('flex');
             });
-
             const closeModal = () => {
                 helpModal.classList.add('hidden');
                 helpModal.classList.remove('flex');
             }
-
             closeModalBtn.addEventListener('click', closeModal);
             helpModal.addEventListener('click', (event) => {
                 if (event.target === helpModal) {
@@ -423,7 +450,20 @@
                 }
             });
 
+            // Collapsible Leaderboard Logic
+            const leaderboardToggle = document.getElementById('leaderboard-all-toggle');
+            const leaderboardContent = document.getElementById('leaderboard-all-content');
+            const leaderboardChevron = document.getElementById('leaderboard-all-chevron');
+            leaderboardToggle.addEventListener('click', () => {
+                leaderboardChevron.classList.toggle('rotate-180');
+                if (leaderboardContent.style.maxHeight && leaderboardContent.style.maxHeight !== '0px') {
+                    leaderboardContent.style.maxHeight = '0px';
+                } else {
+                    leaderboardContent.style.maxHeight = leaderboardContent.scrollHeight + 'px';
+                }
+            });
 
+            // Data Loading
             const dataFiles = ['P21.csv', 'P22.csv', 'P23.csv', 'P31.csv', 'P32.csv', 'P33.csv'];
 
             try {
@@ -446,6 +486,9 @@
                         'ภาพตัวละคร': d['ภาพตัวละคร']?.trim()
                     };
                 }).filter(d => d['ชื่อ'] && d['ระดับชั้น']);
+                
+                // Render Overall Leaderboard once
+                renderLeaderboard('leaderboard-all', allProcessedData);
 
                 // Populate Navbar
                 const classes = ['All', ...new Set(allProcessedData.map(d => d['ระดับชั้น']).filter(Boolean).sort())];
