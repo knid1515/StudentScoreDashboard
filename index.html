@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>แดชบอร์ดสรุปคะแนนนักเรียน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -219,7 +219,7 @@
                     <h3 class="font-semibold text-gray-700">ตารางอันดับนักเรียน</h3>
                      <ul class="list-disc list-inside space-y-1 pl-2">
                         <li><b>ตารางอันดับรวม:</b> แสดงอันดับนักเรียน Top 5 จากทุกห้องรวมกัน (คลิกเพื่อเปิด/ปิด)</li>
-                        <li><b>ตารางอันดับ ป.2 และ ป.3:</b> แสดงอันดับนักเรียน Top 5 โดยแยกตามระดับชั้น</li>
+                        <li><b>ตารางอันดับ ป.2 และ ป.3:</b> เมื่อเลือก "ทุกห้อง" จะแสดงอันดับรวมของแต่ละระดับชั้น แต่เมื่อเลือกห้องเรียนใดห้องเรียนหนึ่ง จะแสดงอันดับ Top 5 ของห้องนั้นๆ</li>
                     </ul>
                 </div>
                  <div>
@@ -293,12 +293,37 @@
             });
         }
 
-        function updateAllLeaderboards(data) {
-            const dataP2 = data.filter(d => d['ระดับชั้น'].startsWith('ป.2'));
-            const dataP3 = data.filter(d => d['ระดับชั้น'].startsWith('ป.3'));
+        function updateAllLeaderboards(data, selectedClass) {
+            const leaderboardP2Container = document.querySelector('#leaderboard-p2').parentElement;
+            const leaderboardP3Container = document.querySelector('#leaderboard-p3').parentElement;
+            const titleP2 = leaderboardP2Container.querySelector('h2');
+            const titleP3 = leaderboardP3Container.querySelector('h2');
 
-            renderLeaderboard('leaderboard-p2', dataP2);
-            renderLeaderboard('leaderboard-p3', dataP3);
+            if (selectedClass === 'All') {
+                // When 'All' is selected, show aggregated leaderboards for P.2 and P.3
+                leaderboardP2Container.style.display = 'block';
+                leaderboardP3Container.style.display = 'block';
+                titleP2.textContent = 'ตารางอันดับ ป.2 (Top 5)';
+                titleP3.textContent = 'ตารางอันดับ ป.3 (Top 5)';
+
+                const dataP2 = allProcessedData.filter(d => d['ระดับชั้น'].startsWith('ป.2'));
+                const dataP3 = allProcessedData.filter(d => d['ระดับชั้น'].startsWith('ป.3'));
+
+                renderLeaderboard('leaderboard-p2', dataP2);
+                renderLeaderboard('leaderboard-p3', dataP3);
+            } else if (selectedClass.startsWith('ป.2')) {
+                // When a P.2 class is selected, show only its leaderboard
+                leaderboardP2Container.style.display = 'block';
+                leaderboardP3Container.style.display = 'none'; // Hide P.3 leaderboard
+                titleP2.textContent = `ตารางอันดับ ${selectedClass} (Top 5)`;
+                renderLeaderboard('leaderboard-p2', data); // 'data' is already filtered
+            } else if (selectedClass.startsWith('ป.3')) {
+                // When a P.3 class is selected, show only its leaderboard
+                leaderboardP2Container.style.display = 'none'; // Hide P.2 leaderboard
+                leaderboardP3Container.style.display = 'block';
+                titleP3.textContent = `ตารางอันดับ ${selectedClass} (Top 5)`;
+                renderLeaderboard('leaderboard-p3', data); // 'data' is already filtered
+            }
         }
 
         function createClassAverageScoreChart(data) {
@@ -413,7 +438,7 @@
             }
 
             updateKpiCards(filteredData);
-            updateAllLeaderboards(filteredData);
+            updateAllLeaderboards(filteredData, selectedClass);
             updateCharacterDistributionChart(filteredData);
             updateScoreDistributionChart(filteredData);
 
