@@ -69,6 +69,13 @@
                 </div>
             </div>
         </header>
+        
+        <!-- Navbar -->
+        <nav class="mb-8 bg-white p-2 rounded-lg shadow-md">
+            <div id="class-filter-nav" class="flex flex-wrap items-center gap-2">
+                <!-- Filter buttons will be inserted here by JavaScript -->
+            </div>
+        </nav>
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -158,19 +165,193 @@
     </div>
 
     <script>
+        // Global variables
+        let allProcessedData = [];
+        const activeCharts = {};
+
+        // Function to destroy a chart instance if it exists
+        function destroyChart(chartId) {
+            if (activeCharts[chartId]) {
+                activeCharts[chartId].destroy();
+                delete activeCharts[chartId];
+            }
+        }
+
+        function updateKpiCards(data) {
+            const totalStudents = new Set(data.map(d => d['ชื่อ'])).size;
+            document.getElementById('total-students').textContent = totalStudents;
+
+            const totalScore = data.reduce((acc, curr) => acc + curr['คะแนน'], 0);
+            const averageScore = totalStudents > 0 ? (totalScore / totalStudents).toFixed(2) : 0;
+            document.getElementById('average-score').textContent = averageScore;
+
+            const totalCharacters = new Set(data.map(d => d['ตัวละคร'])).size;
+            document.getElementById('total-characters').textContent = totalCharacters;
+            
+            // This KPI should always show the total number of classes from all data
+            const totalClasses = new Set(allProcessedData.map(d => d['ระดับชั้น'])).size;
+            document.getElementById('total-classes').textContent = totalClasses;
+        }
+        
+        function updateLeaderboard(data) {
+            const leaderboardContainer = document.getElementById('leaderboard');
+            leaderboardContainer.innerHTML = ''; // Clear existing leaderboard
+            const sortedStudents = [...data].sort((a, b) => b['คะแนน'] - a['คะแนน']);
+            const top5 = sortedStudents.slice(0, 5);
+            const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#a0aec0', '#a0aec0'];
+
+            if(top5.length === 0){
+                leaderboardContainer.innerHTML = `<p class="text-gray-500 text-center">ไม่มีข้อมูลสำหรับแสดงผล</p>`;
+                return;
+            }
+
+            top5.forEach((student, index) => {
+                const studentDiv = document.createElement('div');
+                studentDiv.className = 'flex items-center p-3 rounded-lg hover:bg-gray-50';
+                studentDiv.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style="background-color: ${rankColors[index] || '#cbd5e1'};">
+                       ${index + 1}
+                    </div>
+                    <img src="${student['ภาพตัวละคร']}" alt="${student['ตัวละคร']}" class="w-12 h-12 rounded-full ml-4 object-cover border-2 border-white shadow-md" onerror="this.src='https://placehold.co/48x48/e2e8f0/64748b?text=?'; this.onerror=null;">
+                    <div class="ml-4 flex-grow">
+                        <p class="font-semibold text-gray-800">${student['ชื่อ']}</p>
+                        <p class="text-sm text-gray-500">${student['ตัวละคร']} - ${student['ระดับชั้น']}</p>
+                    </div>
+                    <div class="font-bold text-lg text-blue-600">${student['คะแนน']}</div>
+                `;
+                leaderboardContainer.appendChild(studentDiv);
+            });
+        }
+
+        function createClassAverageScoreChart(data) {
+            destroyChart('classAverageScoreChart');
+            const scoresByClass = d3.group(data, d => d['ระดับชั้น']);
+            const classAverageScores = Array.from(scoresByClass, ([key, values]) => {
+                const total = d3.sum(values, d => d['คะแนน']);
+                return {
+                    class: key,
+                    average: total / values.length
+                };
+            }).sort((a,b) => b.average - a.average);
+
+            const chart = new Chart(document.getElementById('classAverageScoreChart'), {
+                type: 'bar',
+                data: {
+                    labels: classAverageScores.map(d => d.class),
+                    datasets: [{
+                        label: 'คะแนนเฉลี่ย',
+                        data: classAverageScores.map(d => d.average),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#e5e7eb' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+            activeCharts['classAverageScoreChart'] = chart;
+        }
+
+        function updateCharacterDistributionChart(data) {
+            destroyChart('characterDistributionChart');
+            const characterCounts = d3.rollup(data, v => v.length, d => d['ตัวละคร']);
+            const sortedCharacters = Array.from(characterCounts.entries()).sort((a, b) => b[1] - a[1]);
+            
+            if(sortedCharacters.length === 0) return;
+
+            const chart = new Chart(document.getElementById('characterDistributionChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: sortedCharacters.map(d => d[0]),
+                    datasets: [{
+                        label: 'จำนวนนักเรียน',
+                        data: sortedCharacters.map(d => d[1]),
+                        backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#f97316', '#ec4899', '#6366f1'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { padding: 15, boxWidth: 12 } } }
+                }
+            });
+            activeCharts['characterDistributionChart'] = chart;
+        }
+
+        function updateScoreDistributionChart(data) {
+            destroyChart('scoreDistributionChart');
+            if(data.length === 0) return;
+
+            const scoreBins = d3.bin().thresholds(10)(data.map(d => d['คะแนน']));
+            const chart = new Chart(document.getElementById('scoreDistributionChart'), {
+                type: 'bar',
+                data: {
+                    labels: scoreBins.map(bin => `${bin.x0}-${bin.x1}`),
+                    datasets: [{
+                        label: 'จำนวนนักเรียน',
+                        data: scoreBins.map(bin => bin.length),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'จำนวนนักเรียน' }, grid: { color: '#e5e7eb' } },
+                        x: { title: { display: true, text: 'ช่วงคะแนน' }, grid: { display: false } }
+                    }
+                }
+            });
+            activeCharts['scoreDistributionChart'] = chart;
+        }
+
+        // Main function to update dashboard based on filter
+        function updateDashboard(selectedClass = 'All') {
+            const filteredData = (selectedClass === 'All')
+                ? allProcessedData
+                : allProcessedData.filter(d => d['ระดับชั้น'] === selectedClass);
+
+            updateKpiCards(filteredData);
+            updateLeaderboard(filteredData);
+            updateCharacterDistributionChart(filteredData);
+            updateScoreDistributionChart(filteredData);
+
+            // Update active state of buttons
+            document.querySelectorAll('#class-filter-nav button').forEach(button => {
+                if (button.dataset.class === selectedClass) {
+                    button.classList.add('bg-blue-600', 'text-white');
+                    button.classList.remove('bg-gray-200', 'text-gray-700');
+                } else {
+                    button.classList.remove('bg-blue-600', 'text-white');
+                    button.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                }
+            });
+        }
+
+
         document.addEventListener('DOMContentLoaded', async () => {
             const dataFile = 'P23.csv';
             const charactersFile = 'P23.csv';
 
             try {
-                // Load data
-                const [data, charactersData] = await Promise.all([
-                    d3.csv(dataFile),
-                    d3.csv(charactersFile)
-                ]);
+                const data = await d3.csv(dataFile);
 
-                // Clean and process data
-                const processedData = data.map(d => {
+                allProcessedData = data.map(d => {
                     const score = parseInt(d['คะแนน'], 10);
                     return {
                         ...d,
@@ -178,183 +359,30 @@
                         'คะแนน': isNaN(score) ? 0 : score,
                         'ระดับชั้น': d['ระดับชั้น']?.trim()
                     };
-                }).filter(d => d['ชื่อ']);
+                }).filter(d => d['ชื่อ'] && d['ระดับชั้น']);
 
-                // --- 1. KPI Cards ---
-                const totalStudents = new Set(processedData.map(d => d['ชื่อ'])).size;
-                document.getElementById('total-students').textContent = totalStudents;
-
-                const totalScore = processedData.reduce((acc, curr) => acc + curr['คะแนน'], 0);
-                const averageScore = totalStudents > 0 ? (totalScore / totalStudents).toFixed(2) : 0;
-                document.getElementById('average-score').textContent = averageScore;
-
-                const totalCharacters = new Set(processedData.map(d => d['ตัวละคร'])).size;
-                 document.getElementById('total-characters').textContent = totalCharacters;
-
-                const totalClasses = new Set(processedData.map(d => d['ระดับชั้น'])).size;
-                 document.getElementById('total-classes').textContent = totalClasses;
-
-                // --- 2. Leaderboard ---
-                const sortedStudents = [...processedData].sort((a, b) => b['คะแนน'] - a['คะแนน']);
-                const top5 = sortedStudents.slice(0, 5);
-                const leaderboardContainer = document.getElementById('leaderboard');
-                const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#a0aec0', '#a0aec0'];
-
-                top5.forEach((student, index) => {
-                    const studentDiv = document.createElement('div');
-                    studentDiv.className = 'flex items-center p-3 rounded-lg hover:bg-gray-50';
-                    studentDiv.innerHTML = `
-                        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style="background-color: ${rankColors[index] || '#cbd5e1'};">
-                           ${index + 1}
-                        </div>
-                        <img src="${student['ภาพตัวละคร']}" alt="${student['ตัวละคร']}" class="w-12 h-12 rounded-full ml-4 object-cover border-2 border-white shadow-md" onerror="this.style.display='none'">
-                        <div class="ml-4 flex-grow">
-                            <p class="font-semibold text-gray-800">${student['ชื่อ']}</p>
-                            <p class="text-sm text-gray-500">${student['ตัวละคร']} - ${student['ระดับชั้น']}</p>
-                        </div>
-                        <div class="font-bold text-lg text-blue-600">${student['คะแนน']}</div>
-                    `;
-                    leaderboardContainer.appendChild(studentDiv);
+                // Populate Navbar
+                const classes = ['All', ...new Set(allProcessedData.map(d => d['ระดับชั้น']).filter(Boolean).sort())];
+                const navContainer = document.getElementById('class-filter-nav');
+                classes.forEach(className => {
+                    const button = document.createElement('button');
+                    button.textContent = className === 'All' ? 'ทุกห้อง' : className;
+                    button.dataset.class = className;
+                    button.className = 'px-4 py-2 rounded-md font-semibold transition-colors duration-200 text-sm';
+                    button.addEventListener('click', () => updateDashboard(className));
+                    navContainer.appendChild(button);
                 });
 
-
-                // --- 3. Class Average Score Chart ---
-                const scoresByClass = d3.group(processedData, d => d['ระดับชั้น']);
-                const classAverageScores = Array.from(scoresByClass, ([key, values]) => {
-                    const total = d3.sum(values, d => d['คะแนน']);
-                    return {
-                        class: key,
-                        average: total / values.length
-                    };
-                }).sort((a,b) => b.average - a.average);
-
-                new Chart(document.getElementById('classAverageScoreChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: classAverageScores.map(d => d.class),
-                        datasets: [{
-                            label: 'คะแนนเฉลี่ย',
-                            data: classAverageScores.map(d => d.average),
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1,
-                            borderRadius: 5,
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: '#e5e7eb'
-                                }
-                            },
-                            y: {
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // --- 4. Character Distribution Chart ---
-                const characterCounts = d3.rollup(processedData, v => v.length, d => d['ตัวละคร']);
-                const sortedCharacters = Array.from(characterCounts.entries()).sort((a, b) => b[1] - a[1]);
-                
-                new Chart(document.getElementById('characterDistributionChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: sortedCharacters.map(d => d[0]),
-                        datasets: [{
-                            label: 'จำนวนนักเรียน',
-                            data: sortedCharacters.map(d => d[1]),
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)',
-                                'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)',
-                                'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'
-                            ],
-                            borderColor: '#ffffff',
-                            borderWidth: 2,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 15,
-                                    boxWidth: 12
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // --- 5. Score Distribution Chart ---
-                const scoreBins = d3.bin().thresholds(10)(processedData.map(d => d['คะแนน']));
-                new Chart(document.getElementById('scoreDistributionChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: scoreBins.map(bin => `${bin.x0}-${bin.x1}`),
-                        datasets: [{
-                            label: 'จำนวนนักเรียน',
-                            data: scoreBins.map(bin => bin.length),
-                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                            borderColor: 'rgba(239, 68, 68, 1)',
-                            borderWidth: 1,
-                             borderRadius: 5,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'จำนวนนักเรียน'
-                                },
-                                 grid: {
-                                    color: '#e5e7eb'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'ช่วงคะแนน'
-                                },
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
+                // Initial render
+                createClassAverageScoreChart(allProcessedData);
+                updateDashboard('All');
 
 
             } catch (error) {
                 console.error('Error loading or processing data:', error);
-                document.getElementById('loading').innerHTML = `<div class="text-center text-red-600"><p class="text-2xl font-bold">เกิดข้อผิดพลาด</p><p>ไม่สามารถโหลดไฟล์ข้อมูลได้ กรุณาตรวจสอบว่าไฟล์ถูกต้องและลองอีกครั้ง</p><p class="text-sm mt-2">${error.message}</p></div>`;
+                document.getElementById('loading').innerHTML = `<div class="text-center text-red-600"><p class="text-2xl font-bold">เกิดข้อผิดพลาด</p><p>ไม่สามารถโหลดไฟล์ข้อมูลได้ กรุณาตรวจสอบว่าไฟล์ชื่อ 'P23.csv' ถูกต้องและอยู่ในตำแหน่งเดียวกัน</p><p class="text-sm mt-2">${error.message}</p></div>`;
             } finally {
-                // Hide loading spinner
-                 setTimeout(() => {
+                setTimeout(() => {
                     const loadingElement = document.getElementById('loading');
                     loadingElement.style.transition = 'opacity 0.5s ease';
                     loadingElement.style.opacity = '0';
