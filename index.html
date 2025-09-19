@@ -345,11 +345,13 @@
 
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const dataFile = 'P23.csv';
-            const charactersFile = 'P23.csv';
+            const dataFiles = ['P21.csv', 'P22.csv', 'P23.csv', 'P31.csv', 'P33.csv'];
 
             try {
-                const data = await d3.csv(dataFile);
+                const allDataPromises = dataFiles.map(file => d3.csv(file));
+                const allDataArrays = await Promise.all(allDataPromises);
+
+                const data = [].concat(...allDataArrays);
 
                 allProcessedData = data.map(d => {
                     const score = parseInt(d['คะแนน'], 10);
@@ -380,7 +382,7 @@
 
             } catch (error) {
                 console.error('Error loading or processing data:', error);
-                document.getElementById('loading').innerHTML = `<div class="text-center text-red-600"><p class="text-2xl font-bold">เกิดข้อผิดพลาด</p><p>ไม่สามารถโหลดไฟล์ข้อมูลได้ กรุณาตรวจสอบว่าไฟล์ชื่อ 'P23.csv' ถูกต้องและอยู่ในตำแหน่งเดียวกัน</p><p class="text-sm mt-2">${error.message}</p></div>`;
+                document.getElementById('loading').innerHTML = `<div class="text-center text-red-600"><p class="text-2xl font-bold">เกิดข้อผิดพลาด</p><p>ไม่สามารถโหลดไฟล์ข้อมูลได้ กรุณาตรวจสอบว่าไฟล์ทั้งหมด (${dataFiles.join(', ')}) ถูกต้องและอยู่ในตำแหน่งเดียวกัน</p><p class="text-sm mt-2">${error.message}</p></div>`;
             } finally {
                 setTimeout(() => {
                     const loadingElement = document.getElementById('loading');
